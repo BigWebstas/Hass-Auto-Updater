@@ -9,10 +9,34 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.helpers import selector
 
-from .const import CONF_DAY, CONF_TIME, DAY_DAILY, DAYS, DEFAULT_TIME, DOMAIN
+from .const import (
+    CONF_DAY,
+    CONF_FREQUENCY,
+    CONF_TIME,
+    DAY_DAILY,
+    DAYS,
+    DEFAULT_TIME,
+    DOMAIN,
+    FREQUENCIES,
+    FREQUENCY_SCHEDULED,
+)
 
 
-def _schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
+def _frequency_schema(default: str) -> vol.Schema:
+    return vol.Schema(
+        {
+            vol.Required(CONF_FREQUENCY, default=default): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=FREQUENCIES,
+                    translation_key="frequency",
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            )
+        }
+    )
+
+
+def _schedule_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
     defaults = defaults or {}
     return vol.Schema(
         {
@@ -31,11 +55,31 @@ class HassAutoUpdaterConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
+            if user_input[CONF_FREQUENCY] == FREQUENCY_SCHEDULED:
+                return await self.async_step_schedule()
             return self.async_create_entry(title="Auto Updater", data=user_input)
-        return self.async_show_form(step_id="user", data_schema=_schema())
+        return self.async_show_form(step_id="user", data_schema=_frequency_schema(FREQUENCY_SCHEDULED))
+
+    async def async_step_schedule(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            return self.async_create_entry(
+                title="Auto Updater", data={CONF_FREQUENCY: FREQUENCY_SCHEDULED, **user_input}
+            )
+        return self.async_show_form(step_id="schedule", data_schema=_schedule_schema())
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         entry = self._get_reconfigure_entry()
         if user_input is not None:
+            if user_input[CONF_FREQUENCY] == FREQUENCY_SCHEDULED:
+                return await self.async_step_reconfigure_schedule()
             return self.async_update_reload_and_abort(entry, data=user_input)
-        return self.async_show_form(step_id="reconfigure", data_schema=_schema(entry.data))
+        default = entry.data.get(CONF_FREQUENCY, FREQUENCY_SCHEDULED)
+        return self.async_show_form(step_id="reconfigure", data_schema=_frequency_schema(default))
+
+    async def async_step_reconfigure_schedule(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        entry = self._get_reconfigure_entry()
+        if user_input is not None:
+            return self.async_update_reload_and_abort(
+                entry, data={CONF_FREQUENCY: FREQUENCY_SCHEDULED, **user_input}
+            )
+        return self.async_show_form(step_id="reconfigure_schedule", data_schema=_schedule_schema(entry.data))

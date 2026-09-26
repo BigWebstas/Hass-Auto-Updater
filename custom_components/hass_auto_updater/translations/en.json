@@ -1,17 +1,41 @@
 {
+  "selector": {
+    "frequency": {
+      "options": {
+        "scheduled": "Specific day & time",
+        "hourly": "Every hour",
+        "every_6_hours": "Every 6 hours",
+        "every_12_hours": "Every 12 hours"
+      }
+    }
+  },
   "config": {
     "step": {
       "user": {
         "title": "Auto Updater",
-        "description": "Choose when Home Assistant should check for and install updates.",
+        "description": "How often should Home Assistant check for and install updates?",
+        "data": {
+          "frequency": "Frequency"
+        }
+      },
+      "schedule": {
+        "title": "Auto Updater",
+        "description": "Choose the day and time to check for and install updates.",
         "data": {
           "day": "Day",
           "time": "Time"
         }
       },
       "reconfigure": {
+        "title": "Auto Updater frequency",
+        "description": "How often should Home Assistant check for and install updates?",
+        "data": {
+          "frequency": "Frequency"
+        }
+      },
+      "reconfigure_schedule": {
         "title": "Auto Updater schedule",
-        "description": "Update when Home Assistant should check for and install updates.",
+        "description": "Choose the day and time to check for and install updates.",
         "data": {
           "day": "Day",
           "time": "Time"

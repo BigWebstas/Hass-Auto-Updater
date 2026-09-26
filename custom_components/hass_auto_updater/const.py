@@ -4,8 +4,21 @@ from homeassistant.const import Platform
 
 DOMAIN = "hass_auto_updater"
 
+CONF_FREQUENCY = "frequency"
 CONF_DAY = "day"
 CONF_TIME = "time"
+
+# Run at a specific day/time (uses CONF_DAY + CONF_TIME below).
+FREQUENCY_SCHEDULED = "scheduled"
+
+# Run repeatedly on a fixed interval, independent of CONF_DAY/CONF_TIME.
+FREQUENCY_INTERVALS = {
+    "hourly": 1,
+    "every_6_hours": 6,
+    "every_12_hours": 12,
+}
+
+FREQUENCIES = [FREQUENCY_SCHEDULED, *FREQUENCY_INTERVALS]
 
 DAY_DAILY = "daily"
 DAYS = [

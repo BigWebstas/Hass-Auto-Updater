@@ -3,18 +3,22 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.event import async_track_time_change
+from homeassistant.helpers.event import async_track_time_change, async_track_time_interval
 
 from .const import (
     CONF_DAY,
+    CONF_FREQUENCY,
     CONF_TIME,
     DATA_ENABLED,
     DAY_DAILY,
     DEFAULT_TIME,
     DOMAIN,
+    FREQUENCY_INTERVALS,
+    FREQUENCY_SCHEDULED,
     INSTALL_LAST_PREFIXES,
     PLATFORMS,
     WEEKDAY_INDEX,
@@ -29,19 +33,36 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    day = entry.data.get(CONF_DAY, DAY_DAILY)
-    hour, minute, second = (int(part) for part in entry.data.get(CONF_TIME, DEFAULT_TIME).split(":"))
+    frequency = entry.data.get(CONF_FREQUENCY, FREQUENCY_SCHEDULED)
+    if frequency == FREQUENCY_SCHEDULED:
+        remove_listener = _schedule_at_day_and_time(hass, entry)
+    else:
+        remove_listener = _schedule_on_interval(hass, entry, frequency)
 
-    async def _scheduled_run(now) -> None:
-        if day != DAY_DAILY and now.weekday() != WEEKDAY_INDEX.get(day):
-            return
-        await _run_update_job(hass, entry)
-
-    remove_listener = async_track_time_change(hass, _scheduled_run, hour=hour, minute=minute, second=second)
     entry.async_on_unload(remove_listener)
     entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
 
     return True
+
+
+def _schedule_at_day_and_time(hass: HomeAssistant, entry: ConfigEntry):
+    day = entry.data.get(CONF_DAY, DAY_DAILY)
+    hour, minute, second = (int(part) for part in entry.data.get(CONF_TIME, DEFAULT_TIME).split(":"))
+
+    async def _run(now) -> None:
+        if day != DAY_DAILY and now.weekday() != WEEKDAY_INDEX.get(day):
+            return
+        await _run_update_job(hass, entry)
+
+    return async_track_time_change(hass, _run, hour=hour, minute=minute, second=second)
+
+
+def _schedule_on_interval(hass: HomeAssistant, entry: ConfigEntry, frequency: str):
+    async def _run(now) -> None:
+        await _run_update_job(hass, entry)
+
+    hours = FREQUENCY_INTERVALS.get(frequency, FREQUENCY_INTERVALS["hourly"])
+    return async_track_time_interval(hass, _run, timedelta(hours=hours))
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
