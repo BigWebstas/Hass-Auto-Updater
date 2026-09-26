@@ -1,0 +1,12 @@
+{
+  "domain": "hass_auto_updater",
+  "name": "Auto Updater",
+  "version": "1.0.0",
+  "documentation": "https://github.com/BigWebstas/Hass-Auto-Updater",
+  "issue_tracker": "https://github.com/BigWebstas/Hass-Auto-Updater/issues",
+  "codeowners": ["@BigWebstas"],
+  "config_flow": true,
+  "iot_class": "local_push",
+  "integration_type": "service",
+  "requirements": []
+}

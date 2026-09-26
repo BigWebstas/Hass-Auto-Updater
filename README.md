@@ -1,0 +1,23 @@
+# Hass Auto Updater
+
+A custom Home Assistant integration that installs pending updates on a schedule and restarts Home Assistant if anything was installed. A switch lets you pause and resume the schedule.
+
+## What it does
+
+- On the day/time you configure, it checks every `update.*` entity (HA Core, Supervisor, HAOS, add-ons, HACS integrations — whatever's present).
+- Installs any update that's available (`update.install`), installing HA Core/Supervisor/OS last so add-ons and other updates get a chance to finish first.
+- If anything was installed, calls `homeassistant.restart`.
+- Adds a `switch.auto_updater_enabled` entity — turn it off to pause scheduled runs; turn it back on to resume. State survives restarts.
+
+## Install
+
+1. Copy `custom_components/hass_auto_updater` into your Home Assistant config's `custom_components` folder.
+2. Restart Home Assistant.
+3. Settings → Devices & Services → Add Integration → **Auto Updater**.
+4. Pick a day (or "daily") and a time.
+
+To change the schedule later, open the integration's entry and choose **Reconfigure** — no need to remove and re-add it.
+
+## Known limitation
+
+If installing the HA Core or Supervisor update triggers its own restart mid-run, any updates still queued after it won't get installed in that pass — they'll be picked up on the next scheduled run.

@@ -1,0 +1,25 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Auto Updater",
+        "description": "Choose when Home Assistant should check for and install updates.",
+        "data": {
+          "day": "Day",
+          "time": "Time"
+        }
+      },
+      "reconfigure": {
+        "title": "Auto Updater schedule",
+        "description": "Update when Home Assistant should check for and install updates.",
+        "data": {
+          "day": "Day",
+          "time": "Time"
+        }
+      }
+    },
+    "abort": {
+      "reconfigure_successful": "Schedule updated."
+    }
+  }
+}
