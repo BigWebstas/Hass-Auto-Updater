@@ -15,7 +15,11 @@
         "title": "Auto Updater",
         "description": "How often should Home Assistant check for and install updates?",
         "data": {
-          "frequency": "Frequency"
+          "frequency": "Frequency",
+          "reboot_window": "Reboot window (optional)"
+        },
+        "data_description": {
+          "reboot_window": "A schedule helper. Updates install and Home Assistant restarts only while it is on; runs outside it wait until it turns on."
         }
       },
       "schedule": {
@@ -30,7 +34,11 @@
         "title": "Auto Updater frequency",
         "description": "How often should Home Assistant check for and install updates?",
         "data": {
-          "frequency": "Frequency"
+          "frequency": "Frequency",
+          "reboot_window": "Reboot window (optional)"
+        },
+        "data_description": {
+          "reboot_window": "A schedule helper. Updates install and Home Assistant restarts only while it is on; runs outside it wait until it turns on."
         }
       },
       "reconfigure_schedule": {

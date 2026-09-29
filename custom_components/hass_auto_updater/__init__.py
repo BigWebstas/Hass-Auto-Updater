@@ -6,14 +6,21 @@ import logging
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.event import async_track_time_change, async_track_time_interval
+from homeassistant.const import STATE_ON
+from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
+from homeassistant.helpers.event import (
+    async_track_state_change_event,
+    async_track_time_change,
+    async_track_time_interval,
+)
 
 from .const import (
     CONF_DAY,
     CONF_FREQUENCY,
+    CONF_REBOOT_WINDOW,
     CONF_TIME,
     DATA_ENABLED,
+    DATA_RUN_PENDING,
     DAY_DAILY,
     DEFAULT_TIME,
     DOMAIN,
@@ -40,6 +47,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         remove_listener = _schedule_on_interval(hass, entry, frequency)
 
     entry.async_on_unload(remove_listener)
+
+    if reboot_window := entry.data.get(CONF_REBOOT_WINDOW):
+        entry.async_on_unload(_run_deferred_when_window_opens(hass, entry, reboot_window))
     entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
 
     return True
@@ -63,6 +73,22 @@ def _schedule_on_interval(hass: HomeAssistant, entry: ConfigEntry, frequency: st
 
     hours = FREQUENCY_INTERVALS.get(frequency, FREQUENCY_INTERVALS["hourly"])
     return async_track_time_interval(hass, _run, timedelta(hours=hours))
+
+
+def _run_deferred_when_window_opens(hass: HomeAssistant, entry: ConfigEntry, reboot_window: str):
+    @callback
+    def _window_changed(event: Event[EventStateChangedData]) -> None:
+        new_state = event.data["new_state"]
+        if new_state is None or new_state.state != STATE_ON:
+            return
+        store = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+        if store and store.pop(DATA_RUN_PENDING, False):
+            _LOGGER.info("Reboot window %s opened, running deferred update job", reboot_window)
+            entry.async_create_background_task(
+                hass, _run_update_job(hass, entry), "hass_auto_updater_deferred_run"
+            )
+
+    return async_track_state_change_event(hass, [reboot_window], _window_changed)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -94,6 +120,17 @@ async def _run_update_job(hass: HomeAssistant, entry: ConfigEntry) -> None:
     if not pending:
         _LOGGER.debug("Auto updater found no pending updates")
         return
+
+    # Installing core/add-on updates and the final restart all interrupt HA,
+    # so the whole run waits for the reboot window rather than just the restart.
+    reboot_window = entry.data.get(CONF_REBOOT_WINDOW)
+    if reboot_window:
+        window_state = hass.states.get(reboot_window)
+        if window_state is None or window_state.state != STATE_ON:
+            # A missing window entity also defers: never restart outside the user's window.
+            _LOGGER.info("Outside reboot window %s, deferring updates until it turns on", reboot_window)
+            store[DATA_RUN_PENDING] = True
+            return
 
     updated_any = False
     for entity_id in pending:
