@@ -1,3 +1,5 @@
+<img src="custom_components/hass_auto_updater/brand/icon.png" alt="Auto Updater" width="96" align="right" />
+
 # Hass Auto Updater
 
 A custom Home Assistant integration that installs pending updates on a schedule and restarts Home Assistant if anything was installed. A switch lets you pause and resume the schedule.
