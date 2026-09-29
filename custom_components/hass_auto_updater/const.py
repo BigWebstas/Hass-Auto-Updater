@@ -7,6 +7,8 @@ DOMAIN = "hass_auto_updater"
 CONF_FREQUENCY = "frequency"
 CONF_DAY = "day"
 CONF_TIME = "time"
+# Optional schedule.* helper: updates install (and HA restarts) only while it is on.
+CONF_REBOOT_WINDOW = "reboot_window"
 
 # Run at a specific day/time (uses CONF_DAY + CONF_TIME below).
 FREQUENCY_SCHEDULED = "scheduled"
@@ -46,6 +48,8 @@ DEFAULT_TIME = "03:00:00"
 
 # Key inside hass.data[DOMAIN][entry_id] holding whether scheduled runs are enabled.
 DATA_ENABLED = "enabled"
+# Key set when a run was deferred because the reboot window was closed.
+DATA_RUN_PENDING = "run_pending"
 
 PLATFORMS = [Platform.SWITCH]
 
