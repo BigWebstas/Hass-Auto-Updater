@@ -11,7 +11,7 @@ A custom Home Assistant integration that installs pending updates on a schedule 
 - If anything was installed, calls `homeassistant.restart`.
 - Optional **reboot window**: pick a [Schedule helper](https://www.home-assistant.io/integrations/schedule/) (`schedule.*`). Updates install and HA restarts only while that schedule is on. A run that falls outside it waits and runs as soon as the schedule turns on.
 - Adds a `switch.auto_updater_enabled` entity — turn it off to pause scheduled runs; turn it back on to resume. State survives restarts.
-- Adds a `button.auto_updater_run_now` entity to start a check/install run immediately instead of waiting for the schedule. It runs exactly like a scheduled run, so it still respects the pause switch and the reboot window — pressing it can never install updates or restart HA outside your window. It is disabled while a run is already in progress.
+- Adds a `button.auto_updater_run_now` entity to start a check/install run immediately, **overriding the schedule**. It ignores both the pause switch and the reboot window: pressing it installs pending updates and restarts HA right now, whatever the schedule says. It is disabled while a run is already in progress.
 - Adds a `sensor.auto_updater_status` entity reporting what the updater is doing: `idle`, `running`, `deferred` (waiting for the reboot window), or `paused`. Attributes: `enabled`, `pending_updates`, `current_update`, `last_run`, `last_installed`, `last_errors`.
 - `last_run`, `last_installed` and `last_errors` **survive a restart** — including the restart the updater triggers after installing — because the sensor restores its own previous attributes. Transient run state (`pending_updates`, `current_update`, status) is not carried over, since no run is in flight after a restart.
 
@@ -28,6 +28,8 @@ A custom Home Assistant integration that installs pending updates on a schedule 
 To change the schedule later, open the integration's entry and choose **Reconfigure** — no need to remove and re-add it.
 
 ## Known limitations
+
+- The **Run Updates Now** button ignores the reboot window, so pressing it can restart Home Assistant at any hour. That is deliberate — it is an explicit override — but it means the reboot window is not a guarantee, only a default.
 
 - If installing the HA Core or Supervisor update triggers its own restart mid-run, any updates still queued after it won't get installed in that pass — they'll be picked up on the next scheduled run.
 - Interval schedules (hourly / every 6h / every 12h) count from whenever the integration was last set up or Home Assistant restarted — they're not aligned to clock boundaries like midnight or 06:00.

@@ -21,6 +21,7 @@ from .const import (
     SIGNAL_STATUS_UPDATED,
     STATUS_IDLE,
     STATUS_PAUSED,
+    STATUS_RUNNING,
 )
 
 # Attributes carried across a restart. Transient run state (status, current
@@ -84,8 +85,14 @@ class AutoUpdaterStatusSensor(SensorEntity, RestoreEntity):
     def _refresh(self) -> None:
         store = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
         enabled = store.get(DATA_ENABLED, True)
-        # Paused is derived, not stored: the switch can flip it without a run starting.
-        self._attr_native_value = store.get(DATA_STATUS, STATUS_IDLE) if enabled else STATUS_PAUSED
+        status = store.get(DATA_STATUS, STATUS_IDLE)
+        # Paused is derived, not stored: the switch can flip it without a run
+        # starting. A run in flight wins over it though, because the Run Updates
+        # Now button overrides the pause switch while it is working.
+        if enabled or status == STATUS_RUNNING:
+            self._attr_native_value = status
+        else:
+            self._attr_native_value = STATUS_PAUSED
         self._attr_extra_state_attributes = {
             "enabled": enabled,
             "pending_updates": store.get(DATA_PENDING_COUNT, 0),

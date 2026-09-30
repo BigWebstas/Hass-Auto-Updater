@@ -143,12 +143,17 @@ def _is_addon_update(entity_id: str) -> bool:
     return entity_id.startswith(ADDON_UPDATE_PREFIX) and not entity_id.startswith(INSTALL_LAST_PREFIXES)
 
 
-async def _run_update_job(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Install any pending updates, then restart Home Assistant if anything installed."""
+async def _run_update_job(hass: HomeAssistant, entry: ConfigEntry, force: bool = False) -> None:
+    """Install any pending updates, then restart Home Assistant if anything installed.
+
+    When ``force`` is set (the Run Updates Now button), the pause switch and the
+    reboot window are both ignored: the run happens now, whatever the schedule
+    or window says. This is an explicit user action, so it takes precedence.
+    """
     store = hass.data.get(DOMAIN, {}).get(entry.entry_id)
     if not store:
         return
-    if not store.get(DATA_ENABLED, True):
+    if not force and not store.get(DATA_ENABLED, True):
         _LOGGER.debug("Auto updater is paused, skipping scheduled run")
         # Status is not stored as paused: the sensor derives it from the switch,
         # so resuming does not leave a stale "paused" value behind.
@@ -168,7 +173,8 @@ async def _run_update_job(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
     # Installing core/add-on updates and the final restart all interrupt HA,
     # so the whole run waits for the reboot window rather than just the restart.
-    reboot_window = entry.data.get(CONF_REBOOT_WINDOW)
+    # A forced run skips this: the user pressed the button deliberately.
+    reboot_window = None if force else entry.data.get(CONF_REBOOT_WINDOW)
     if reboot_window:
         window_state = hass.states.get(reboot_window)
         if window_state is None or window_state.state != STATE_ON:

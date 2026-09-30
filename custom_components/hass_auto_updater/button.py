@@ -19,12 +19,12 @@ async def async_setup_entry(
 
 
 class RunUpdatesNowButton(ButtonEntity):
-    """Runs the update job immediately instead of waiting for the schedule.
+    """Runs the update job immediately, overriding the schedule.
 
-    This behaves exactly like a scheduled run: it still honours the pause switch
-    and the reboot window, so pressing it can never install updates or restart
-    Home Assistant outside the window the user configured. It only changes the
-    *when*, never the *what*.
+    This is an explicit override: it ignores both the pause switch and the
+    reboot window, so pressing it installs pending updates and restarts Home
+    Assistant right now, whatever the schedule says. Because it can restart HA
+    at any hour, use it deliberately.
     """
 
     _attr_name = "Run Updates Now"
@@ -43,9 +43,9 @@ class RunUpdatesNowButton(ButtonEntity):
         return store.get(DATA_STATUS) != STATUS_RUNNING
 
     async def async_press(self) -> None:
-        """Start the run in the background so the press call returns immediately."""
+        """Start an overriding run in the background so the press returns immediately."""
         self._entry.async_create_background_task(
             self.hass,
-            _run_update_job(self.hass, self._entry),
+            _run_update_job(self.hass, self._entry, force=True),
             "hass_auto_updater_manual_run",
         )
