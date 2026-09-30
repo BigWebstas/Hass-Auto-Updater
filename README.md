@@ -11,6 +11,7 @@ A custom Home Assistant integration that installs pending updates on a schedule 
 - If anything was installed, calls `homeassistant.restart`.
 - Optional **reboot window**: pick a [Schedule helper](https://www.home-assistant.io/integrations/schedule/) (`schedule.*`). Updates install and HA restarts only while that schedule is on. A run that falls outside it waits and runs as soon as the schedule turns on.
 - Adds a `switch.auto_updater_enabled` entity — turn it off to pause scheduled runs; turn it back on to resume. State survives restarts.
+- Adds a `button.auto_updater_run_now` entity to start a check/install run immediately instead of waiting for the schedule. It runs exactly like a scheduled run, so it still respects the pause switch and the reboot window — pressing it can never install updates or restart HA outside your window. It is disabled while a run is already in progress.
 - Adds a `sensor.auto_updater_status` entity reporting what the updater is doing: `idle`, `running`, `deferred` (waiting for the reboot window), or `paused`. Attributes: `enabled`, `pending_updates`, `current_update`, `last_run`, `last_installed`, `last_errors`.
 - `last_run`, `last_installed` and `last_errors` **survive a restart** — including the restart the updater triggers after installing — because the sensor restores its own previous attributes. Transient run state (`pending_updates`, `current_update`, status) is not carried over, since no run is in flight after a restart.
 

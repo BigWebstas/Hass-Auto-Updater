@@ -67,7 +67,7 @@ STATUS_RUNNING = "running"
 STATUS_DEFERRED = "deferred"
 STATUS_PAUSED = "paused"
 
-PLATFORMS = [Platform.SWITCH, Platform.SENSOR]
+PLATFORMS = [Platform.SWITCH, Platform.SENSOR, Platform.BUTTON]
 
 # Add-on update entities (e.g. update.mosquitto, update.node_red).
 ADDON_UPDATE_PREFIX = "update."
