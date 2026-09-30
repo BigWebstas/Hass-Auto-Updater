@@ -8,11 +8,13 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_ON
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_track_state_change_event,
     async_track_time_change,
     async_track_time_interval,
 )
+from homeassistant.util import dt as dt_util
 
 from .const import (
     ADDON_UPDATE_PREFIX,
@@ -20,8 +22,14 @@ from .const import (
     CONF_FREQUENCY,
     CONF_REBOOT_WINDOW,
     CONF_TIME,
+    DATA_CURRENT_ENTITY,
     DATA_ENABLED,
+    DATA_LAST_ERRORS,
+    DATA_LAST_INSTALLED,
+    DATA_LAST_RUN,
+    DATA_PENDING_COUNT,
     DATA_RUN_PENDING,
+    DATA_STATUS,
     DAY_DAILY,
     DEFAULT_TIME,
     DOMAIN,
@@ -29,15 +37,37 @@ from .const import (
     FREQUENCY_SCHEDULED,
     INSTALL_LAST_PREFIXES,
     PLATFORMS,
+    SIGNAL_STATUS_UPDATED,
+    STATUS_DEFERRED,
+    STATUS_IDLE,
+    STATUS_RUNNING,
     WEEKDAY_INDEX,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 
+@callback
+def _set_status(hass: HomeAssistant, entry: ConfigEntry, **values) -> None:
+    """Update the run status for an entry and tell the status sensor about it."""
+    store = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    if store is None:
+        return
+    store.update(values)
+    async_dispatcher_send(hass, SIGNAL_STATUS_UPDATED, entry.entry_id)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {DATA_ENABLED: True}
+    hass.data[DOMAIN][entry.entry_id] = {
+        DATA_ENABLED: True,
+        DATA_STATUS: STATUS_IDLE,
+        DATA_CURRENT_ENTITY: None,
+        DATA_PENDING_COUNT: 0,
+        DATA_LAST_RUN: None,
+        DATA_LAST_INSTALLED: [],
+        DATA_LAST_ERRORS: [],
+    }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -116,8 +146,13 @@ def _is_addon_update(entity_id: str) -> bool:
 async def _run_update_job(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Install any pending updates, then restart Home Assistant if anything installed."""
     store = hass.data.get(DOMAIN, {}).get(entry.entry_id)
-    if not store or not store.get(DATA_ENABLED, True):
+    if not store:
+        return
+    if not store.get(DATA_ENABLED, True):
         _LOGGER.debug("Auto updater is paused, skipping scheduled run")
+        # Status is not stored as paused: the sensor derives it from the switch,
+        # so resuming does not leave a stale "paused" value behind.
+        _set_status(hass, entry, current_entity=None)
         return
 
     pending = sorted(
@@ -126,6 +161,9 @@ async def _run_update_job(hass: HomeAssistant, entry: ConfigEntry) -> None:
     )
     if not pending:
         _LOGGER.debug("Auto updater found no pending updates")
+        _set_status(
+            hass, entry, status=STATUS_IDLE, current_entity=None, pending_count=0
+        )
         return
 
     # Installing core/add-on updates and the final restart all interrupt HA,
@@ -137,20 +175,49 @@ async def _run_update_job(hass: HomeAssistant, entry: ConfigEntry) -> None:
             # A missing window entity also defers: never restart outside the user's window.
             _LOGGER.info("Outside reboot window %s, deferring updates until it turns on", reboot_window)
             store[DATA_RUN_PENDING] = True
+            _set_status(
+                hass,
+                entry,
+                status=STATUS_DEFERRED,
+                current_entity=None,
+                pending_count=len(pending),
+            )
             return
 
-    updated_any = False
-    for entity_id in pending:
+    _set_status(
+        hass,
+        entry,
+        status=STATUS_RUNNING,
+        current_entity=pending[0],
+        pending_count=len(pending),
+        last_run=dt_util.utcnow().isoformat(),
+    )
+
+    installed: list[str] = []
+    errors: list[str] = []
+    for index, entity_id in enumerate(pending):
         update_type = "add-on" if _is_addon_update(entity_id) else "core"
         _LOGGER.info("Auto updater installing %s update for %s", update_type, entity_id)
+        _set_status(hass, entry, current_entity=entity_id, pending_count=len(pending) - index)
         try:
             await hass.services.async_call(
                 "update", "install", {"entity_id": entity_id}, blocking=True
             )
-            updated_any = True
+            installed.append(entity_id)
         except Exception as err:  # noqa: BLE001 - one failing entity must not stop the rest
+            errors.append(f"{entity_id}: {err}")
             _LOGGER.error("Auto updater failed installing %s update for %s: %s", update_type, entity_id, err)
 
-    if updated_any:
+    _set_status(
+        hass,
+        entry,
+        status=STATUS_IDLE,
+        current_entity=None,
+        pending_count=0,
+        last_installed=installed,
+        last_errors=errors,
+    )
+
+    if installed:
         _LOGGER.warning("Auto updater installed updates, restarting Home Assistant")
         await hass.services.async_call("homeassistant", "restart", {}, blocking=False)

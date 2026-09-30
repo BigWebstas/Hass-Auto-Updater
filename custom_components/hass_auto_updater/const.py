@@ -4,6 +4,9 @@ from homeassistant.const import Platform
 
 DOMAIN = "hass_auto_updater"
 
+# Dispatcher signal fired whenever run status changes, carrying the entry_id.
+SIGNAL_STATUS_UPDATED = f"{DOMAIN}_status_updated"
+
 CONF_FREQUENCY = "frequency"
 CONF_DAY = "day"
 CONF_TIME = "time"
@@ -50,8 +53,21 @@ DEFAULT_TIME = "03:00:00"
 DATA_ENABLED = "enabled"
 # Key set when a run was deferred because the reboot window was closed.
 DATA_RUN_PENDING = "run_pending"
+# Keys describing the current/most recent run, mirrored by the status sensor.
+DATA_STATUS = "status"
+DATA_CURRENT_ENTITY = "current_entity"
+DATA_PENDING_COUNT = "pending_count"
+DATA_LAST_RUN = "last_run"
+DATA_LAST_INSTALLED = "last_installed"
+DATA_LAST_ERRORS = "last_errors"
 
-PLATFORMS = [Platform.SWITCH]
+# Status sensor states.
+STATUS_IDLE = "idle"
+STATUS_RUNNING = "running"
+STATUS_DEFERRED = "deferred"
+STATUS_PAUSED = "paused"
+
+PLATFORMS = [Platform.SWITCH, Platform.SENSOR]
 
 # Add-on update entities (e.g. update.mosquitto, update.node_red).
 ADDON_UPDATE_PREFIX = "update."

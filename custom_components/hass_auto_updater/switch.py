@@ -7,11 +7,12 @@ from typing import Any
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import DATA_ENABLED, DOMAIN
+from .const import DATA_ENABLED, DOMAIN, SIGNAL_STATUS_UPDATED
 
 
 async def async_setup_entry(
@@ -54,3 +55,5 @@ class AutoUpdaterEnabledSwitch(SwitchEntity, RestoreEntity):
         store = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id)
         if store is not None:
             store[DATA_ENABLED] = self._attr_is_on
+            # Keep the status sensor in step with the pause switch.
+            async_dispatcher_send(self.hass, SIGNAL_STATUS_UPDATED, self._entry.entry_id)
