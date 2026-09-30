@@ -53,8 +53,11 @@ DATA_RUN_PENDING = "run_pending"
 
 PLATFORMS = [Platform.SWITCH]
 
+# Add-on update entities (e.g. update.mosquitto, update.node_red).
+ADDON_UPDATE_PREFIX = "update."
+
 # Installed last: these can trigger their own HA/Supervisor restart mid-run,
-# so everything else should finish installing first.
+# so everything else (including add-ons) should finish installing first.
 INSTALL_LAST_PREFIXES = (
     "update.home_assistant_core",
     "update.home_assistant_supervisor",

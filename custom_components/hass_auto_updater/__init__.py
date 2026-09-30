@@ -15,6 +15,7 @@ from homeassistant.helpers.event import (
 )
 
 from .const import (
+    ADDON_UPDATE_PREFIX,
     CONF_DAY,
     CONF_FREQUENCY,
     CONF_REBOOT_WINDOW,
@@ -103,7 +104,13 @@ async def _async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 
 def _install_sort_key(entity_id: str) -> int:
+    """Sort add-ons first, core/supervisor/OS last."""
     return 1 if entity_id.startswith(INSTALL_LAST_PREFIXES) else 0
+
+
+def _is_addon_update(entity_id: str) -> bool:
+    """Return True if the entity is an add-on update (not core/supervisor/OS)."""
+    return entity_id.startswith(ADDON_UPDATE_PREFIX) and not entity_id.startswith(INSTALL_LAST_PREFIXES)
 
 
 async def _run_update_job(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -134,14 +141,15 @@ async def _run_update_job(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
     updated_any = False
     for entity_id in pending:
-        _LOGGER.info("Auto updater installing update for %s", entity_id)
+        update_type = "add-on" if _is_addon_update(entity_id) else "core"
+        _LOGGER.info("Auto updater installing %s update for %s", update_type, entity_id)
         try:
             await hass.services.async_call(
                 "update", "install", {"entity_id": entity_id}, blocking=True
             )
             updated_any = True
         except Exception as err:  # noqa: BLE001 - one failing entity must not stop the rest
-            _LOGGER.error("Auto updater failed installing update for %s: %s", entity_id, err)
+            _LOGGER.error("Auto updater failed installing %s update for %s: %s", update_type, entity_id, err)
 
     if updated_any:
         _LOGGER.warning("Auto updater installed updates, restarting Home Assistant")

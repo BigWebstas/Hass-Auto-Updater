@@ -6,8 +6,8 @@ A custom Home Assistant integration that installs pending updates on a schedule 
 
 ## What it does
 
-- On the schedule you configure, it checks every `update.*` entity (HA Core, Supervisor, HAOS, add-ons, HACS integrations — whatever's present).
-- Installs any update that's available (`update.install`), installing HA Core/Supervisor/OS last so add-ons and other updates get a chance to finish first.
+- On the schedule you configure, it checks every `update.*` entity (HA Core, Supervisor, HAOS, **add-ons**, HACS integrations — whatever's present).
+- Installs any update that's available (`update.install`), installing **add-ons first** and HA Core/Supervisor/OS last so add-ons get a chance to finish before any restart.
 - If anything was installed, calls `homeassistant.restart`.
 - Optional **reboot window**: pick a [Schedule helper](https://www.home-assistant.io/integrations/schedule/) (`schedule.*`). Updates install and HA restarts only while that schedule is on. A run that falls outside it waits and runs as soon as the schedule turns on.
 - Adds a `switch.auto_updater_enabled` entity — turn it off to pause scheduled runs; turn it back on to resume. State survives restarts.
