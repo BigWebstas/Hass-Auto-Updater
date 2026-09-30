@@ -27,6 +27,23 @@ A custom Home Assistant integration that installs pending updates on a schedule 
 
 To change the schedule later, open the integration's entry and choose **Reconfigure** — no need to remove and re-add it.
 
+## Development
+
+Tests run against a real Home Assistant instance via
+[pytest-homeassistant-custom-component](https://github.com/home-assistant/pytest-homeassistant-custom-component):
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements_test.txt
+.venv/bin/pytest                                    # all tests
+.venv/bin/pytest --cov=custom_components.hass_auto_updater   # with coverage
+```
+
+`pytest.ini` sets `asyncio_mode = auto`, which the Home Assistant test harness
+requires. Note that the test instance runs in the `US/Pacific` timezone, so
+schedule tests build their trigger times from `dt_util.now()` (local) rather
+than `dt_util.utcnow()`.
+
 ## Known limitations
 
 - The **Run Updates Now** button ignores the reboot window, so pressing it can restart Home Assistant at any hour. That is deliberate — it is an explicit override — but it means the reboot window is not a guarantee, only a default.
