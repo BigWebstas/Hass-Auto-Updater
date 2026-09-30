@@ -6,9 +6,7 @@ from homeassistant.core import HomeAssistant
 
 from custom_components.hass_auto_updater.const import DATA_ENABLED
 
-from .conftest import make_entry, setup_integration
-
-SWITCH = "switch.auto_updater_enabled"
+from .conftest import SWITCH, make_entry, setup_integration, store_for
 
 
 async def test_switch_starts_on(hass: HomeAssistant) -> None:
@@ -16,7 +14,7 @@ async def test_switch_starts_on(hass: HomeAssistant) -> None:
     entry = await setup_integration(hass, make_entry())
 
     assert hass.states.get(SWITCH).state == "on"
-    assert hass.data["hass_auto_updater"][entry.entry_id][DATA_ENABLED] is True
+    assert store_for(hass, entry)[DATA_ENABLED] is True
 
 
 async def test_turn_off_updates_store(hass: HomeAssistant) -> None:
@@ -27,7 +25,7 @@ async def test_turn_off_updates_store(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     assert hass.states.get(SWITCH).state == "off"
-    assert hass.data["hass_auto_updater"][entry.entry_id][DATA_ENABLED] is False
+    assert store_for(hass, entry)[DATA_ENABLED] is False
 
 
 async def test_turn_on_updates_store(hass: HomeAssistant) -> None:
@@ -40,7 +38,7 @@ async def test_turn_on_updates_store(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     assert hass.states.get(SWITCH).state == "on"
-    assert hass.data["hass_auto_updater"][entry.entry_id][DATA_ENABLED] is True
+    assert store_for(hass, entry)[DATA_ENABLED] is True
 
 
 async def test_switch_state_survives_restart(hass: HomeAssistant) -> None:
@@ -56,4 +54,4 @@ async def test_switch_state_survives_restart(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     assert hass.states.get(SWITCH).state == "off"
-    assert hass.data["hass_auto_updater"][entry.entry_id][DATA_ENABLED] is False
+    assert store_for(hass, entry)[DATA_ENABLED] is False

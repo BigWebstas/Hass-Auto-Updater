@@ -13,6 +13,8 @@ from custom_components.hass_auto_updater.const import (
     DOMAIN,
 )
 
+from .conftest import make_entry
+
 
 async def test_scheduled_flow(hass: HomeAssistant) -> None:
     """Choosing a specific day and time asks for the day/time step."""
@@ -67,8 +69,6 @@ async def test_flow_with_reboot_window(hass: HomeAssistant) -> None:
 
 async def test_reconfigure_changes_frequency(hass: HomeAssistant) -> None:
     """Reconfigure updates an existing entry and reloads it."""
-    from .conftest import make_entry
-
     entry = make_entry()
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
@@ -90,8 +90,6 @@ async def test_reconfigure_changes_frequency(hass: HomeAssistant) -> None:
 
 async def test_reconfigure_to_scheduled_asks_for_day_and_time(hass: HomeAssistant) -> None:
     """Switching an interval entry to a specific day/time asks for the second step."""
-    from .conftest import make_entry
-
     entry = make_entry()
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)

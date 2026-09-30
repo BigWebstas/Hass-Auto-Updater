@@ -59,9 +59,7 @@ class AutoUpdaterStatusSensor(SensorEntity, RestoreEntity):
         await self._async_restore_last_run()
         self._refresh()
         self.async_on_remove(
-            async_dispatcher_connect(
-                self.hass, SIGNAL_STATUS_UPDATED, self._handle_status_changed
-            )
+            async_dispatcher_connect(self.hass, SIGNAL_STATUS_UPDATED, self._handle_status_changed)
         )
 
     async def _async_restore_last_run(self) -> None:

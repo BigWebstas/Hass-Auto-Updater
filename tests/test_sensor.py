@@ -2,28 +2,30 @@
 
 from __future__ import annotations
 
-import pytest
 from homeassistant.components.update import DOMAIN as UPDATE_DOMAIN
 from homeassistant.components.update import SERVICE_INSTALL
-from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant, ServiceCall
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.hass_auto_updater import _run_update_job
 from custom_components.hass_auto_updater.const import (
     CONF_REBOOT_WINDOW,
     DATA_ENABLED,
-    DATA_STATUS,
     STATUS_DEFERRED,
     STATUS_IDLE,
     STATUS_PAUSED,
     STATUS_RUNNING,
 )
 
-from .conftest import make_entry, set_state, setup_integration
-from .test_init import ADDON, ADDON_2, WINDOW, services  # noqa: F401 - reuse fixture
-
-SENSOR = "sensor.auto_updater_status"
+from .conftest import (
+    ADDON,
+    ADDON_2,
+    SENSOR,
+    WINDOW,
+    make_entry,
+    set_state,
+    setup_integration,
+    store_for,
+)
 
 
 def attributes(hass: HomeAssistant) -> dict:
@@ -96,7 +98,7 @@ async def test_current_update_and_countdown(hass: HomeAssistant, services) -> No
     async def _capture(call: ServiceCall) -> None:
         attrs = attributes(hass)
         seen.append((attrs["current_update"], attrs["pending_updates"]))
-        services.installed.extend(call.data[ATTR_ENTITY_ID])
+        services.installed.extend(call.data["entity_id"])
 
     hass.services.async_register(UPDATE_DOMAIN, SERVICE_INSTALL, _capture)
 
@@ -126,14 +128,14 @@ async def test_last_run_details_recorded(hass: HomeAssistant, services) -> None:
 async def test_forced_run_while_paused_reports_running(hass: HomeAssistant, services) -> None:
     """A forced run reports running even though the switch is off."""
     entry = await setup_integration(hass, make_entry())
-    hass.data["hass_auto_updater"][entry.entry_id][DATA_ENABLED] = False
+    store_for(hass, entry)[DATA_ENABLED] = False
     set_state(hass, ADDON, "on")
 
     observed: list[str] = []
 
     async def _capture(call: ServiceCall) -> None:
         observed.append(hass.states.get(SENSOR).state)
-        services.installed.extend(call.data[ATTR_ENTITY_ID])
+        services.installed.extend(call.data["entity_id"])
 
     hass.services.async_register(UPDATE_DOMAIN, SERVICE_INSTALL, _capture)
 

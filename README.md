@@ -39,6 +39,17 @@ python3 -m venv .venv
 .venv/bin/pytest --cov=custom_components.hass_auto_updater   # with coverage
 ```
 
+Lint and format are checked with [ruff](https://docs.astral.sh/ruff/), configured
+in `pyproject.toml`:
+
+```bash
+.venv/bin/ruff check custom_components tests
+.venv/bin/ruff format --check custom_components tests
+```
+
+Both run automatically in CI (`.github/workflows/tests.yml`) on every push to
+`main` and on pull requests.
+
 `pytest.ini` sets `asyncio_mode = auto`, which the Home Assistant test harness
 requires. Note that the test instance runs in the `US/Pacific` timezone, so
 schedule tests build their trigger times from `dt_util.now()` (local) rather

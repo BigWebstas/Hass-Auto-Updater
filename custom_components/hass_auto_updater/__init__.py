@@ -88,7 +88,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 def _schedule_at_day_and_time(hass: HomeAssistant, entry: ConfigEntry):
     day = entry.data.get(CONF_DAY, DAY_DAILY)
-    hour, minute, second = (int(part) for part in entry.data.get(CONF_TIME, DEFAULT_TIME).split(":"))
+    hour, minute, second = (
+        int(part) for part in entry.data.get(CONF_TIME, DEFAULT_TIME).split(":")
+    )
 
     async def _run(now) -> None:
         if day != DAY_DAILY and now.weekday() != WEEKDAY_INDEX.get(day):
@@ -140,7 +142,9 @@ def _install_sort_key(entity_id: str) -> int:
 
 def _is_addon_update(entity_id: str) -> bool:
     """Return True if the entity is an add-on update (not core/supervisor/OS)."""
-    return entity_id.startswith(ADDON_UPDATE_PREFIX) and not entity_id.startswith(INSTALL_LAST_PREFIXES)
+    return entity_id.startswith(ADDON_UPDATE_PREFIX) and not entity_id.startswith(
+        INSTALL_LAST_PREFIXES
+    )
 
 
 async def _run_update_job(hass: HomeAssistant, entry: ConfigEntry, force: bool = False) -> None:
@@ -166,9 +170,7 @@ async def _run_update_job(hass: HomeAssistant, entry: ConfigEntry, force: bool =
     )
     if not pending:
         _LOGGER.debug("Auto updater found no pending updates")
-        _set_status(
-            hass, entry, status=STATUS_IDLE, current_entity=None, pending_count=0
-        )
+        _set_status(hass, entry, status=STATUS_IDLE, current_entity=None, pending_count=0)
         return
 
     # Installing core/add-on updates and the final restart all interrupt HA,
@@ -179,7 +181,9 @@ async def _run_update_job(hass: HomeAssistant, entry: ConfigEntry, force: bool =
         window_state = hass.states.get(reboot_window)
         if window_state is None or window_state.state != STATE_ON:
             # A missing window entity also defers: never restart outside the user's window.
-            _LOGGER.info("Outside reboot window %s, deferring updates until it turns on", reboot_window)
+            _LOGGER.info(
+                "Outside reboot window %s, deferring updates until it turns on", reboot_window
+            )
             store[DATA_RUN_PENDING] = True
             _set_status(
                 hass,
@@ -212,7 +216,12 @@ async def _run_update_job(hass: HomeAssistant, entry: ConfigEntry, force: bool =
             installed.append(entity_id)
         except Exception as err:  # noqa: BLE001 - one failing entity must not stop the rest
             errors.append(f"{entity_id}: {err}")
-            _LOGGER.error("Auto updater failed installing %s update for %s: %s", update_type, entity_id, err)
+            _LOGGER.error(
+                "Auto updater failed installing %s update for %s: %s",
+                update_type,
+                entity_id,
+                err,
+            )
 
     _set_status(
         hass,

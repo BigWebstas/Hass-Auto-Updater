@@ -1,0 +1,25 @@
+[project]
+name = "hass-auto-updater"
+version = "1.1.0"
+description = "Home Assistant custom integration that installs pending updates on a schedule."
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+  "E",    # pycodestyle errors
+  "F",    # pyflakes
+  "I",    # isort
+  "UP",   # pyupgrade
+  "B",    # flake8-bugbear
+  "SIM",  # flake8-simplify
+  "C4",   # flake8-comprehensions
+]
+# Docstring rules (D) are intentionally not enforced: Home Assistant's own
+# integrations do not require them on platform boilerplate such as
+# `async_setup_entry` or `__init__`.
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]

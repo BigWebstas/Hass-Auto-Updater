@@ -7,10 +7,7 @@ import datetime
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
-from pytest_homeassistant_custom_component.common import (
-    MockConfigEntry,
-    async_fire_time_changed,
-)
+from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.hass_auto_updater.const import (
     CONF_DAY,
@@ -19,8 +16,9 @@ from custom_components.hass_auto_updater.const import (
     DATA_LAST_INSTALLED,
 )
 
-from .conftest import make_entry, set_state, setup_integration
-from .test_init import ADDON, services  # noqa: F401 - reuse fixture
+from .conftest import ADDON, make_entry, set_state, setup_integration, store_for
+
+WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 
 async def test_scheduled_run_fires_at_configured_time(
@@ -36,7 +34,7 @@ async def test_scheduled_run_fires_at_configured_time(
     await setup_integration(hass, entry)
     set_state(hass, ADDON, "on")
 
-        # Before the trigger: nothing should happen.
+    # Before the trigger: nothing should happen.
     async_fire_time_changed(hass, base + datetime.timedelta(minutes=30))
     await hass.async_block_till_done()
     assert services.installed == []
@@ -54,9 +52,7 @@ async def test_scheduled_run_respects_day_of_week(
     trigger = dt_util.now().replace(hour=3, minute=0, second=0, microsecond=0)
     freezer.move_to(trigger)
     # Pick a weekday that is definitely not today.
-    other_day = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"][
-        (trigger.weekday() + 1) % 7
-    ]
+    other_day = WEEKDAYS[(trigger.weekday() + 1) % 7]
 
     entry = make_entry(**{CONF_FREQUENCY: "scheduled", CONF_DAY: other_day, CONF_TIME: "03:00:00"})
     await setup_integration(hass, entry)
@@ -73,9 +69,7 @@ async def test_scheduled_run_runs_on_matching_day(
     """An entry pinned to the current weekday does run."""
     trigger = dt_util.now().replace(hour=3, minute=0, second=0, microsecond=0)
     freezer.move_to(trigger)
-    today = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"][
-        trigger.weekday()
-    ]
+    today = WEEKDAYS[trigger.weekday()]
 
     entry = make_entry(**{CONF_FREQUENCY: "scheduled", CONF_DAY: today, CONF_TIME: "03:00:00"})
     await setup_integration(hass, entry)
@@ -96,8 +90,7 @@ async def test_interval_run_fires(hass: HomeAssistant, services) -> None:
     await hass.async_block_till_done()
 
     assert services.installed == [ADDON]
-    store = hass.data["hass_auto_updater"][entry.entry_id]
-    assert store[DATA_LAST_INSTALLED] == [ADDON]
+    assert store_for(hass, entry)[DATA_LAST_INSTALLED] == [ADDON]
 
 
 async def test_interval_run_does_not_fire_early(hass: HomeAssistant, services) -> None:
