@@ -5,3 +5,6 @@ __pycache__/
 .venv/
 .coverage
 .pytest_cache/
+
+# Local AI-assistant config (personal, not shared with the team)
+.claude/
