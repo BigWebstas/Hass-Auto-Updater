@@ -1,7 +1,7 @@
 {
   "domain": "hass_auto_updater",
   "name": "Auto Updater",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "documentation": "https://github.com/BigWebstas/Hass-Auto-Updater",
   "issue_tracker": "https://github.com/BigWebstas/Hass-Auto-Updater/issues",
   "codeowners": ["@BigWebstas"],
